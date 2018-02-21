@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"image/color"
 	"github.com/hbagdi/go-unsplash/unsplash"
+	"github.com/disintegration/imaging"
 	"golang.org/x/oauth2"
 	"net/http"
 	"fmt"
@@ -42,10 +43,7 @@ func main() {
 		"paul.nelson.baker@gmail.com",
 	})
 	backgroundImage := getRandomUnsplashURL()
-
 	generateFinalImage(backgroundImage, maskImage)
-	//log.Println(maskImage, backgroundImage)
-	//getRandomUnsplashAPI()
 }
 func generateImageMask(text []string) image.Image {
 	// Based off the implementation here: https://socketloop.com/tutorials/golang-print-utf-8-fonts-on-image-example
@@ -111,12 +109,14 @@ func getRandomUnsplashAPI() {
 
 func generateFinalImage(backgroundImage image.Image, maskImage image.Image) {
 	//invertedImage := invertImageColors(backgroundImage)
+	invertedImage := imaging.Invert(backgroundImage)
+	saveDrwImg(invertedImage, "/tmp/inverted.jpg")
+	draw.DrawMask(invertedImage, invertedImage.Bounds(), maskImage, image.ZP, maskImage, image.ZP, draw.Src)
+	saveDrwImg(invertedImage, "/tmp/inverted-with-mask.jpg")
 
 	finalDestination := image.NewRGBA(backgroundImage.Bounds())
-	draw.Draw(finalDestination, finalDestination.Bounds(), backgroundImage, finalDestination.Bounds().Min, draw.Src)
-	draw.DrawMask(finalDestination, finalDestination.Bounds(), maskImage, image.ZP, maskImage, image.ZP, draw.Over)
-	//draw.Draw(invertedImage, invertedImage.Bounds(), maskImage, image.ZP, draw.Src)
-	//draw.DrawMask(invertedImage, invertedImage.Bounds(), maskImage, image.ZP, maskImage, image.ZP, draw.Over)
+	draw.Draw(finalDestination, finalDestination.Bounds(), backgroundImage, finalDestination.Bounds().Min, draw.Over)
+	draw.Draw(finalDestination, finalDestination.Bounds(), invertedImage, invertedImage.Bounds().Min, draw.Over)
 	output, err := os.Create("/tmp/out-final.jpg")
 	defer output.Close()
 	if err != nil {
@@ -130,32 +130,24 @@ func generateFinalImage(backgroundImage image.Image, maskImage image.Image) {
 	}
 }
 
-func invertImageColors(input image.Image) image.Image {
-	bounds := input.Bounds()
-	newImg := image.NewRGBA(bounds)
-
-	var currentPixelColor color.Color
-	var r, g, b, a uint32
-	for x := 0; x < bounds.Max.X; x++ {
-		for y := 0; y < bounds.Max.Y; y++ {
-			r, g, b, a = input.At(x, y).RGBA()
-			currentPixelColor = pixelColor{
-				r: 0xffff - r,
-				g: 0xffff - g,
-				b: 0xffff - b,
-				a: a,
-			}
-			newImg.Set(x, y, currentPixelColor)
-		}
+func saveDrwImg(image draw.Image, filename string) {
+	f, err := os.Create(filename)
+	if err != nil {
+		log.Fatalln(err)
 	}
-
-	return newImg
+	defer f.Close()
+	jpeg.Encode(f, image, &jpeg.Options{
+		Quality: 100,
+	})
 }
 
-type pixelColor struct {
-	r, g, b, a uint32
-}
-
-func (c pixelColor) RGBA() (uint32, uint32, uint32, uint32) {
-	return c.r, c.g, c.b, c.a
+func saveImgImg(image image.Image, filename string) {
+	f, err := os.Create(filename)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer f.Close()
+	jpeg.Encode(f, image, &jpeg.Options{
+		Quality: 100,
+	})
 }
