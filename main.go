@@ -18,14 +18,14 @@ import (
 )
 
 var (
-	width  = 1584 //646
-	height = 396  //220
+	topic  = "sky"
+	width  = 1584
+	height = 396
 )
 
 var (
-	utf8FontFile = "/usr/share/fonts/truetype/ubuntu-font-family/Ubuntu-B.ttf" //"wqy-zenhei.ttf"
-	//utf8FontSize     = float64(15.0)
-	utf8FontSize = 55.0 //float64(25.0)
+	utf8FontFile = "/usr/share/fonts/truetype/ubuntu-font-family/Ubuntu-B.ttf"
+	utf8FontSize = 55.0
 	spacing      = float64(1.5)
 	dpi          = float64(72)
 	opaque       = color.Alpha{255}
@@ -39,7 +39,7 @@ func main() {
 		"                       Paul Baker - AWS Certified Developer",
 		"                             github.com/paul-nelson-baker",
 	})
-	backgroundImage := getRandomUnsplashURL()
+	backgroundImage := getRandomUnsplashNaive()
 	generateFinalImage(backgroundImage, maskImage)
 }
 func generateImageMask(text []string) image.Image {
@@ -72,8 +72,10 @@ func generateImageMask(text []string) image.Image {
 	}
 	return imageMask
 }
-func getRandomUnsplashURL() image.Image {
-	randomImageUrl := fmt.Sprintf("https://source.unsplash.com/random/%dx%d?computer", width, height)
+
+// Naive method of getting an unsplash image.
+func getRandomUnsplashNaive() image.Image {
+	randomImageUrl := fmt.Sprintf("https://source.unsplash.com/random/%dx%d?%s", width, height, topic)
 	http := http.DefaultClient
 	resp, err := http.Get(randomImageUrl)
 	if err != nil {
