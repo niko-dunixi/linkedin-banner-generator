@@ -13,7 +13,7 @@ import (
 	"golang.org/x/oauth2"
 	"net/http"
 	"fmt"
-	"image/jpeg"
+	"image/png"
 )
 
 var (
@@ -27,11 +27,13 @@ var (
 	utf8FontSize = float64(25.0)
 	spacing      = float64(1.5)
 	dpi          = float64(72)
-	red          = color.RGBA{255, 0, 0, 255}
-	blue         = color.RGBA{0, 0, 255, 255}
-	white        = color.RGBA{255, 255, 255, 255}
-	black        = color.RGBA{0, 0, 0, 255}
-	transparent  = color.RGBA{0, 0, 0, 0}
+	opaque       = color.Alpha{255}
+	transparent  = color.Alpha{0}
+	//red          = color.RGBA{255, 0, 0, 255}
+	//blue         = color.RGBA{0, 0, 255, 255}
+	//white        = color.RGBA{255, 255, 255, 255}
+	//black        = color.RGBA{0, 0, 0, 255}
+	//transparent  = color.RGBA{0, 0, 0, 0}
 	// more color at https://github.com/golang/image/blob/master/colornames/table.go
 )
 
@@ -55,7 +57,7 @@ func generateImageMask(text []string) image.Image {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	fontForegroundColor, fontBackgroundColor := image.NewUniform(black), image.NewUniform(transparent)
+	fontForegroundColor, fontBackgroundColor := image.NewUniform(opaque), image.NewUniform(transparent)
 	imageMask := image.NewRGBA(image.Rect(0, 0, width, height))
 	draw.Draw(imageMask, imageMask.Bounds(), fontBackgroundColor, image.ZP, draw.Src)
 	context := freetype.NewContext()
@@ -108,26 +110,21 @@ func getRandomUnsplashAPI() {
 }
 
 func generateFinalImage(backgroundImage image.Image, maskImage image.Image) {
-	//invertedImage := invertImageColors(backgroundImage)
-	invertedImage := imaging.Invert(backgroundImage)
-	saveDrwImg(invertedImage, "/tmp/inverted.jpg")
-	draw.DrawMask(invertedImage, invertedImage.Bounds(), maskImage, image.ZP, maskImage, image.ZP, draw.Src)
-	saveDrwImg(invertedImage, "/tmp/inverted-with-mask.jpg")
+	bounds := image.Rect(0, 0, width, height)
 
-	finalDestination := image.NewRGBA(backgroundImage.Bounds())
-	draw.Draw(finalDestination, finalDestination.Bounds(), backgroundImage, finalDestination.Bounds().Min, draw.Over)
-	draw.Draw(finalDestination, finalDestination.Bounds(), invertedImage, invertedImage.Bounds().Min, draw.Over)
-	output, err := os.Create("/tmp/out-final.jpg")
-	defer output.Close()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	err = jpeg.Encode(output, finalDestination, &jpeg.Options{
-		Quality: 100,
-	})
-	if err != nil {
-		log.Fatalln(err)
-	}
+	saveImgImg(backgroundImage, "/tmp/debug/background.png")
+	saveImgImg(maskImage, "/tmp/debug/mask.png")
+	invertedImage := imaging.Invert(backgroundImage)
+	saveDrwImg(invertedImage, "/tmp/debug/inverted.png")
+
+	inversionWithMask := image.NewRGBA(invertedImage.Bounds())
+	draw.DrawMask(inversionWithMask, bounds, invertedImage, image.ZP, maskImage, image.ZP, draw.Src)
+	saveDrwImg(inversionWithMask, "/tmp/debug/inverted-with-mask.png")
+
+	finalDestination := image.NewRGBA(bounds)
+	draw.Draw(finalDestination, bounds, backgroundImage, image.ZP, draw.Over)
+	draw.Draw(finalDestination, bounds, inversionWithMask, image.ZP, draw.Over)
+	saveImgImg(finalDestination, "/tmp/debug/out-final.png")
 }
 
 func saveDrwImg(image draw.Image, filename string) {
@@ -136,9 +133,7 @@ func saveDrwImg(image draw.Image, filename string) {
 		log.Fatalln(err)
 	}
 	defer f.Close()
-	jpeg.Encode(f, image, &jpeg.Options{
-		Quality: 100,
-	})
+	png.Encode(f, image)
 }
 
 func saveImgImg(image image.Image, filename string) {
@@ -147,7 +142,5 @@ func saveImgImg(image image.Image, filename string) {
 		log.Fatalln(err)
 	}
 	defer f.Close()
-	jpeg.Encode(f, image, &jpeg.Options{
-		Quality: 100,
-	})
+	png.Encode(f, image)
 }
