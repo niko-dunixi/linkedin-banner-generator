@@ -1,11 +1,9 @@
 package main
 
 import (
-	"bufio"
 	"github.com/golang/freetype"
 	"image"
 	"image/draw"
-	"image/png"
 	"log"
 	"os"
 	"io/ioutil"
@@ -13,7 +11,6 @@ import (
 	"github.com/hbagdi/go-unsplash/unsplash"
 	"golang.org/x/oauth2"
 	"net/http"
-	"io"
 	"fmt"
 	"image/jpeg"
 )
@@ -33,6 +30,7 @@ var (
 	blue         = color.RGBA{0, 0, 255, 255}
 	white        = color.RGBA{255, 255, 255, 255}
 	black        = color.RGBA{0, 0, 0, 255}
+	transparent  = color.RGBA{0, 0, 0, 0}
 	// more color at https://github.com/golang/image/blob/master/colornames/table.go
 )
 
@@ -73,16 +71,7 @@ func getRandomUnsplashURL() image.Image {
 		log.Fatalln(err)
 	}
 	defer resp.Body.Close()
-	outfile, err := os.Create("/tmp/out-background.jpg")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer outfile.Close()
-	_, err = io.Copy(outfile, resp.Body)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	backgroundImage, _, err := image.Decode(outfile)
+	backgroundImage, _, err := image.Decode(resp.Body)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -106,8 +95,8 @@ func getRandomUnsplashAPI() {
 	}
 }
 
-// Based off the imple}mentation here: https://socketloop.com/tutorials/golang-print-utf-8-fonts-on-image-example
 func generateImageMask(text []string) image.Image {
+	// Based off the implementation here: https://socketloop.com/tutorials/golang-print-utf-8-fonts-on-image-example
 	fontBytes, err := ioutil.ReadFile(utf8FontFile)
 	if err != nil {
 		log.Fatalln(err)
@@ -116,7 +105,7 @@ func generateImageMask(text []string) image.Image {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	fontForegroundColor, fontBackgroundColor := image.NewUniform(black), image.NewUniform(white)
+	fontForegroundColor, fontBackgroundColor := image.NewUniform(black), image.NewUniform(transparent)
 	imageMask := image.NewRGBA(image.Rect(0, 0, width, height))
 	draw.Draw(imageMask, imageMask.Bounds(), fontBackgroundColor, image.ZP, draw.Src)
 	context := freetype.NewContext()
@@ -126,10 +115,6 @@ func generateImageMask(text []string) image.Image {
 	context.SetClip(imageMask.Bounds())
 	context.SetDst(imageMask)
 	context.SetSrc(fontForegroundColor)
-	//var text = []string{
-	//	"paul.nelson.baker@gmail.com",
-	//	"github.com/paul-nelson-baker",
-	//}
 	pt := freetype.Pt(10, 10+int(context.PointToFixed(utf8FontSize)>>6))
 	for _, str := range text {
 		_, err := context.DrawString(str, pt)
@@ -138,20 +123,10 @@ func generateImageMask(text []string) image.Image {
 		}
 		pt.Y += context.PointToFixed(utf8FontSize * spacing)
 	}
-	outFile, err := os.Create("/tmp/out-mask.png")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer outFile.Close()
-	buff := bufio.NewWriter(outFile)
-	err = png.Encode(buff, imageMask)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	err = buff.Flush()
-	if err != nil {
-		log.Fatalln(err)
-	}
+
+	//finalMask := image.NewRGBA(imageMask.Bounds())
+	//draw.ApproxBiLinear.Scale(finalMask, imageMask.Bounds(), imageMask, imageMask.Bounds(), draw.Over, nil)
+
 	return imageMask
 }
 
