@@ -38,8 +38,8 @@ func main() {
 	log.Println("Generating banner of dimensions:", width, height)
 	maskImage := generateImageMask([]string{
 		"Paul Baker - AWS Certified Developer",
-		"Email: paul.nelson.baker@gmail.com",
-		"Github: github.com/paul-nelson-baker",
+		"github.com/paul-nelson-baker",
+		"paul.nelson.baker@gmail.com",
 	})
 	backgroundImage := getRandomUnsplashURL()
 
@@ -47,54 +47,6 @@ func main() {
 	//log.Println(maskImage, backgroundImage)
 	//getRandomUnsplashAPI()
 }
-func generateFinalImage(backgroundImage image.Image, maskImage image.Image) {
-	finalDestination := image.NewRGBA(backgroundImage.Bounds())
-	draw.Draw(finalDestination, finalDestination.Bounds(), backgroundImage, finalDestination.Bounds().Min, draw.Src)
-	draw.DrawMask(finalDestination, finalDestination.Bounds(), maskImage, image.ZP, maskImage, image.ZP, draw.Over)
-	output, err := os.Create("/tmp/out-final.jpg")
-	defer output.Close()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	err = jpeg.Encode(output, finalDestination, &jpeg.Options{
-		Quality: 100,
-	})
-	if err != nil {
-		log.Fatalln(err)
-	}
-}
-func getRandomUnsplashURL() image.Image {
-	randomImageUrl := fmt.Sprintf("https://source.unsplash.com/random/%dx%d", width, height)
-	http := http.DefaultClient
-	resp, err := http.Get(randomImageUrl)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer resp.Body.Close()
-	backgroundImage, _, err := image.Decode(resp.Body)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	return backgroundImage
-}
-func getRandomUnsplashAPI() {
-	tokenSource := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: "TODO: WE NEED TO GET AN ACCESS TOKEN VIA OAUTH2"},
-	)
-	client := oauth2.NewClient(oauth2.NoContext, tokenSource)
-	usplsh := unsplash.New(client)
-	photos, _, err := usplsh.Photos.Random(&unsplash.RandomPhotoOpt{
-		Height: height,
-		Width:  width,
-	})
-	if err != nil {
-		log.Fatalln(err)
-	}
-	for photo := range *photos {
-		log.Println(photo)
-	}
-}
-
 func generateImageMask(text []string) image.Image {
 	// Based off the implementation here: https://socketloop.com/tutorials/golang-print-utf-8-fonts-on-image-example
 	fontBytes, err := ioutil.ReadFile(utf8FontFile)
@@ -129,48 +81,51 @@ func generateImageMask(text []string) image.Image {
 
 	return imageMask
 }
+func getRandomUnsplashURL() image.Image {
+	randomImageUrl := fmt.Sprintf("https://source.unsplash.com/random/%dx%d", width, height)
+	http := http.DefaultClient
+	resp, err := http.Get(randomImageUrl)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer resp.Body.Close()
+	backgroundImage, _, err := image.Decode(resp.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return backgroundImage
+}
+func getRandomUnsplashAPI() {
+	tokenSource := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: "TODO: WE NEED TO GET AN ACCESS TOKEN VIA OAUTH2"},
+	)
+	client := oauth2.NewClient(oauth2.NoContext, tokenSource)
+	usplsh := unsplash.New(client)
+	photos, _, err := usplsh.Photos.Random(&unsplash.RandomPhotoOpt{
+		Height: height,
+		Width:  width,
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+	for photo := range *photos {
+		log.Println(photo)
+	}
+}
 
-//func generateImageMask() {
-//	font, err := truetype.Parse(goregular.TTF)
-//	if err != nil {
-//		log.Fatalln(err)
-//	}
-//	foreground, background := image.Black, image.White
-//	imageMask := image.NewRGBA(image.Rect(0, 0, width, height))
-//	draw.Draw(imageMask, imageMask.Bounds(), background, image.ZP, draw.Src)
-//	context := freetype.NewContext()
-//	context.SetDPI(float64(72))
-//	context.SetFont(font)
-//	context.SetFontSize(float64(16))
-//	context.SetClip(imageMask.Bounds())
-//	context.SetDst(imageMask)
-//	context.SetSrc(foreground)
-//	options := &truetype.Options{
-//		Size: 125.0,
-//	}
-//	face := truetype.NewFace(font, options)
-//	for i, currentChar := range "📧: paul.nelson.baker@gmail.com" {
-//		currentCharAsString := string(currentChar)
-//		runeWidth, ok := face.GlyphAdvance(rune(currentChar))
-//		if ok != true {
-//			log.Fatalln("Something happened with the rune")
-//		}
-//		widthAsInt := int(float64(runeWidth) / 64)
-//		pt := freetype.Pt(i*250+(125-widthAsInt/2), 128)
-//		context.DrawString(currentCharAsString, pt)
-//	}
-//	outputFile, err := os.Create("/tmp/out.png")
-//	if err != nil {
-//		log.Fatalln(err)
-//	}
-//	defer outputFile.Close()
-//	buffer := bufio.NewWriter(outputFile)
-//	err = png.Encode(buffer, imageMask)
-//	if err != nil {
-//		log.Fatalln(err)
-//	}
-//	err = buffer.Flush()
-//	if err != nil {
-//		log.Fatalln(err)
-//	}
-//}
+func generateFinalImage(backgroundImage image.Image, maskImage image.Image) {
+	finalDestination := image.NewRGBA(backgroundImage.Bounds())
+	draw.Draw(finalDestination, finalDestination.Bounds(), backgroundImage, finalDestination.Bounds().Min, draw.Src)
+	draw.DrawMask(finalDestination, finalDestination.Bounds(), maskImage, image.ZP, maskImage, image.ZP, draw.Over)
+	output, err := os.Create("/tmp/out-final.jpg")
+	defer output.Close()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	err = jpeg.Encode(output, finalDestination, &jpeg.Options{
+		Quality: 100,
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
