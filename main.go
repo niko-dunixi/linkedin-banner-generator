@@ -35,7 +35,7 @@ var (
 func main() {
 	log.Println("Generating banner of dimensions:", width, height)
 	maskImage := generateImageMask(width, height, []string{
-		"                             paul.nelson.baker@gmail.com",
+		"",
 		"                       Paul Baker - AWS Certified Developer",
 		"                             github.com/paul-nelson-baker",
 	})
