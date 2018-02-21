@@ -75,10 +75,6 @@ func generateImageMask(text []string) image.Image {
 		}
 		pt.Y += context.PointToFixed(utf8FontSize * spacing)
 	}
-
-	//finalMask := image.NewRGBA(imageMask.Bounds())
-	//draw.ApproxBiLinear.Scale(finalMask, imageMask.Bounds(), imageMask, imageMask.Bounds(), draw.Over, nil)
-
 	return imageMask
 }
 func getRandomUnsplashURL() image.Image {
@@ -114,9 +110,13 @@ func getRandomUnsplashAPI() {
 }
 
 func generateFinalImage(backgroundImage image.Image, maskImage image.Image) {
+	//invertedImage := invertImageColors(backgroundImage)
+
 	finalDestination := image.NewRGBA(backgroundImage.Bounds())
 	draw.Draw(finalDestination, finalDestination.Bounds(), backgroundImage, finalDestination.Bounds().Min, draw.Src)
 	draw.DrawMask(finalDestination, finalDestination.Bounds(), maskImage, image.ZP, maskImage, image.ZP, draw.Over)
+	//draw.Draw(invertedImage, invertedImage.Bounds(), maskImage, image.ZP, draw.Src)
+	//draw.DrawMask(invertedImage, invertedImage.Bounds(), maskImage, image.ZP, maskImage, image.ZP, draw.Over)
 	output, err := os.Create("/tmp/out-final.jpg")
 	defer output.Close()
 	if err != nil {
@@ -128,4 +128,34 @@ func generateFinalImage(backgroundImage image.Image, maskImage image.Image) {
 	if err != nil {
 		log.Fatalln(err)
 	}
+}
+
+func invertImageColors(input image.Image) image.Image {
+	bounds := input.Bounds()
+	newImg := image.NewRGBA(bounds)
+
+	var currentPixelColor color.Color
+	var r, g, b, a uint32
+	for x := 0; x < bounds.Max.X; x++ {
+		for y := 0; y < bounds.Max.Y; y++ {
+			r, g, b, a = input.At(x, y).RGBA()
+			currentPixelColor = pixelColor{
+				r: 0xffff - r,
+				g: 0xffff - g,
+				b: 0xffff - b,
+				a: a,
+			}
+			newImg.Set(x, y, currentPixelColor)
+		}
+	}
+
+	return newImg
+}
+
+type pixelColor struct {
+	r, g, b, a uint32
+}
+
+func (c pixelColor) RGBA() (uint32, uint32, uint32, uint32) {
+	return c.r, c.g, c.b, c.a
 }
