@@ -34,15 +34,15 @@ var (
 
 func main() {
 	log.Println("Generating banner of dimensions:", width, height)
-	maskImage := generateImageMask([]string{
+	maskImage := generateImageMask(width, height, []string{
 		"                             paul.nelson.baker@gmail.com",
 		"                       Paul Baker - AWS Certified Developer",
 		"                             github.com/paul-nelson-baker",
 	})
-	backgroundImage := getRandomUnsplashNaive()
-	generateFinalImage(backgroundImage, maskImage)
+	backgroundImage := getRandomUnsplashNaive(width, height, topic)
+	generateFinalImage(width, height, backgroundImage, maskImage)
 }
-func generateImageMask(text []string) image.Image {
+func generateImageMask(width int, height int, text []string) image.Image {
 	// Based off the implementation here: https://socketloop.com/tutorials/golang-print-utf-8-fonts-on-image-example
 	fontBytes, err := ioutil.ReadFile(utf8FontFile)
 	if err != nil {
@@ -74,7 +74,7 @@ func generateImageMask(text []string) image.Image {
 }
 
 // Naive method of getting an unsplash image.
-func getRandomUnsplashNaive() image.Image {
+func getRandomUnsplashNaive(width int, height int, topic string) image.Image {
 	randomImageUrl := fmt.Sprintf("https://source.unsplash.com/random/%dx%d?%s", width, height, topic)
 	http := http.DefaultClient
 	resp, err := http.Get(randomImageUrl)
@@ -106,7 +106,7 @@ func getRandomUnsplashAPI() {
 	}
 }
 
-func generateFinalImage(backgroundImage image.Image, maskImage image.Image) {
+func generateFinalImage(width int, height int, backgroundImage image.Image, maskImage image.Image) {
 	bounds := image.Rect(0, 0, width, height)
 	debugPath := filepath.Join(".", "debug")
 	os.MkdirAll(debugPath, os.ModePerm)
