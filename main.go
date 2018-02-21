@@ -35,9 +35,9 @@ var (
 func main() {
 	log.Println("Generating banner of dimensions:", width, height)
 	maskImage := generateImageMask([]string{
-		"                            paul.nelson.baker@gmail.com",
+		"                             paul.nelson.baker@gmail.com",
 		"                       Paul Baker - AWS Certified Developer",
-		"                            github.com/paul-nelson-baker",
+		"                             github.com/paul-nelson-baker",
 	})
 	backgroundImage := getRandomUnsplashURL()
 	generateFinalImage(backgroundImage, maskImage)
@@ -73,7 +73,7 @@ func generateImageMask(text []string) image.Image {
 	return imageMask
 }
 func getRandomUnsplashURL() image.Image {
-	randomImageUrl := fmt.Sprintf("https://source.unsplash.com/random/%dx%d", width, height)
+	randomImageUrl := fmt.Sprintf("https://source.unsplash.com/random/%dx%d?computer", width, height)
 	http := http.DefaultClient
 	resp, err := http.Get(randomImageUrl)
 	if err != nil {
