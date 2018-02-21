@@ -14,35 +14,30 @@ import (
 	"net/http"
 	"fmt"
 	"image/png"
+	"path/filepath"
 )
 
 var (
-	width  = 646
-	height = 220
+	width  = 1584 //646
+	height = 396  //220
 )
 
 var (
 	utf8FontFile = "/usr/share/fonts/truetype/ubuntu-font-family/Ubuntu-B.ttf" //"wqy-zenhei.ttf"
 	//utf8FontSize     = float64(15.0)
-	utf8FontSize = float64(25.0)
+	utf8FontSize = 55.0 //float64(25.0)
 	spacing      = float64(1.5)
 	dpi          = float64(72)
 	opaque       = color.Alpha{255}
 	transparent  = color.Alpha{0}
-	//red          = color.RGBA{255, 0, 0, 255}
-	//blue         = color.RGBA{0, 0, 255, 255}
-	//white        = color.RGBA{255, 255, 255, 255}
-	//black        = color.RGBA{0, 0, 0, 255}
-	//transparent  = color.RGBA{0, 0, 0, 0}
-	// more color at https://github.com/golang/image/blob/master/colornames/table.go
 )
 
 func main() {
 	log.Println("Generating banner of dimensions:", width, height)
 	maskImage := generateImageMask([]string{
-		"Paul Baker - AWS Certified Developer",
-		"github.com/paul-nelson-baker",
-		"paul.nelson.baker@gmail.com",
+		"                            paul.nelson.baker@gmail.com",
+		"                       Paul Baker - AWS Certified Developer",
+		"                            github.com/paul-nelson-baker",
 	})
 	backgroundImage := getRandomUnsplashURL()
 	generateFinalImage(backgroundImage, maskImage)
@@ -111,20 +106,32 @@ func getRandomUnsplashAPI() {
 
 func generateFinalImage(backgroundImage image.Image, maskImage image.Image) {
 	bounds := image.Rect(0, 0, width, height)
+	debugPath := filepath.Join(".", "debug")
+	os.MkdirAll(debugPath, os.ModePerm)
 
-	saveImgImg(backgroundImage, "/tmp/debug/background.png")
-	saveImgImg(maskImage, "/tmp/debug/mask.png")
+	saveImgImg(backgroundImage, "./debug/background.png")
+	saveImgImg(maskImage, "./debug/mask.png")
 	invertedImage := imaging.Invert(backgroundImage)
-	saveDrwImg(invertedImage, "/tmp/debug/inverted.png")
+	saveDrwImg(invertedImage, "./debug/inverted.png")
 
-	inversionWithMask := image.NewRGBA(invertedImage.Bounds())
+	//outlineOfMask := image.NewRGBA(bounds)
+	//offset := 4
+	//draw.Draw(outlineOfMask, image.Rect(bounds.Min.X-offset, bounds.Min.Y-offset, bounds.Max.X-offset, bounds.Max.Y-offset), maskImage, image.ZP, draw.Over)
+	//draw.Draw(outlineOfMask, image.Rect(bounds.Min.X-offset, bounds.Min.Y+offset, bounds.Max.X-offset, bounds.Max.Y+offset), maskImage, image.ZP, draw.Over)
+	//draw.Draw(outlineOfMask, image.Rect(bounds.Min.X+offset, bounds.Min.Y-offset, bounds.Max.X+offset, bounds.Max.Y-offset), maskImage, image.ZP, draw.Over)
+	//draw.Draw(outlineOfMask, image.Rect(bounds.Min.X+offset, bounds.Min.Y+offset, bounds.Max.X+offset, bounds.Max.Y+offset), maskImage, image.ZP, draw.Over)
+	//draw.DrawMask(outlineOfMask, bounds, outlineOfMask, image.ZP, maskImage, image.ZP, draw.Src)
+	//saveDrwImg(outlineOfMask, "/tmp/debug/mask-outline.png")
+
+	inversionWithMask := image.NewRGBA(bounds)
 	draw.DrawMask(inversionWithMask, bounds, invertedImage, image.ZP, maskImage, image.ZP, draw.Src)
-	saveDrwImg(inversionWithMask, "/tmp/debug/inverted-with-mask.png")
+	saveDrwImg(inversionWithMask, "./debug/inverted-with-mask.png")
 
 	finalDestination := image.NewRGBA(bounds)
 	draw.Draw(finalDestination, bounds, backgroundImage, image.ZP, draw.Over)
+	//draw.Draw(finalDestination, bounds, outlineOfMask, image.ZP, draw.Over)
 	draw.Draw(finalDestination, bounds, inversionWithMask, image.ZP, draw.Over)
-	saveImgImg(finalDestination, "/tmp/debug/out-final.png")
+	saveImgImg(finalDestination, fmt.Sprintf("out-final_%dx%d.png", width, height))
 }
 
 func saveDrwImg(image draw.Image, filename string) {
